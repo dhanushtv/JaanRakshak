@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JaanRakshak — Dynamic Relocation & Sync Command</title>
+  
+  <!-- Leaflet Map Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #151f32;
+      --card-border: #1e293b;
+      --accent: #3b82f6;
+      --accent-green: #10b981;
+      --text: #f8fafc;
+      --text-sub: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    body.intensity-critical { --bg: #1a0507; --card-bg: #2d0b0e; --card-border: #52171c; --accent: #ef4444; }
+    body.intensity-high { --bg: #1c0e04; --card-bg: #2d1808; --card-border: #522d0f; --accent: #f59e0b; }
+    body.intensity-moderate { --bg: #111a05; --card-bg: #1e2e09; --card-border: #3b5911; --accent: #84cc16; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background 0.4s, border-color 0.4s; }
+    body { background-color: var(--bg); color: var(--text); padding: 18px; padding-bottom: 75px; min-height: 100vh; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo { background: var(--accent); color: #fff; font-weight: 900; padding: 8px 12px; border-radius: 8px; }
+    .title-area h1 { font-size: 1.25rem; font-weight: 800; }
+    .title-area p { font-size: 0.68rem; color: var(--text-sub); letter-spacing: 1.2px; text-transform: uppercase; font-weight: 600; }
+
+    .status-pill { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--card-border); font-size: 0.8rem; font-weight: 600; color: var(--text-sub); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+    .dot.live { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+    .banner { background: var(--card-bg); border: 1px solid var(--card-border); border-left: 6px solid var(--accent); border-radius: 10px; padding: 14px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .banner-sub { font-size: 0.72rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .status-val { font-size: 1.25rem; font-weight: 800; color: var(--accent); margin-top: 2px; }
+
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; }
+    .card-title { font-size: 0.7rem; color: var(--text-sub); text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .card-val { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+    .card-desc { font-size: 0.75rem; color: var(--text-sub); margin-top: 4px; }
+
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    .col { display: flex; flex-direction: column; gap: 16px; }
+
+    #map { width: 100%; height: 440px; border-radius: 8px; background: #080d1a; margin-top: 8px; border: 1px solid var(--card-border); }
+
+    .sos-item { background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .sos-title { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+    .sos-meta { font-size: 0.75rem; color: var(--text-sub); margin-top: 2px; }
+
+    .nav-btn { background: var(--accent); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; }
+    .nav-btn:hover { opacity: 0.9; }
+
+    .team-card { background: rgba(0,0,0,0.15); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .team-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; }
+    .progress-bar-bg { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s linear; }
+
+    .demo-bar { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #0f172a; border: 1px solid var(--accent); padding: 8px 18px; border-radius: 30px; display: flex; gap: 12px; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+    .demo-btn { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 6px 14px; border-radius: 15px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .demo-btn:hover { background: var(--accent); }
+    .priority-badge { background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">JR-KL</div>
+      <div class="title-area">
+        <h1>JaanRakshak — Full Production Fleet Command</h1>
+        <p>OSRM Road Engine • Base Relocation • Firebase Sync</p>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="dot" id="connDot"></div>
+      <span id="connText">Connecting IoT...</span>
+    </div>
+  </div>
+
+  <div class="banner">
+    <div>
+      <div class="banner-sub">Periyar & Kuttanad River Sector</div>
+      <div class="status-val" id="statusText">🟢 Threat Level: STABLE</div>
+    </div>
+    <div style="text-align: right; font-size: 0.8rem; color: var(--text-sub);">
+      <div>Routing Engine: <span style="color: var(--accent-green); font-weight: bold;">HYBRID (OSRM + HAVERSINE)</span></div>
+      <div>Backend Queue Stock: <strong id="backendQueueCount" style="color: var(--accent);">0 Calls Pending</strong></div>
+    </div>
+  </div>
+
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">At-Risk Victims</div>
+      <div class="card-val" id="casualtyCount">0 People</div>
+      <div class="card-desc">Active Incident Casualties</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Active Field Calls</div>
+      <div class="card-val" id="sosCount">0 Calls</div>
+      <div class="card-desc">Ingested Priority Queue</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Kerala Squads</div>
+      <div class="card-val" id="fleetCount">5 Squads</div>
+      <div class="card-desc">Sync Enabled</div>
+    </div>
+    <div class="card">
+      <div class="card-title">River Gauge</div>
+      <div class="card-val"><span id="waterLevel">1.2</span> <small style="font-size: 0.9rem;">Meters</small></div>
+      <div class="card-desc">Periyar Basin Telemetry</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="col">
+      <div class="card">
+        <div class="card-title" id="queueHeader" style="color: var(--accent);">📋 Kerala Active Flood Call Queue</div>
+        <div id="victimQueue" style="margin-top: 10px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tactical Sector Map & Live Fleet Vectors</div>
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-title">Field Squad Status & Ground Telemetry</div>
+        <div id="teamsContainer"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Kerala Relief Shelters</div>
+        <div id="sheltersContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span style="font-size: 0.75rem; color: #94a3b8; font-weight: bold;">⚡ QUEUE ENGINE CONTROLS:</span>
+    <button class="demo-btn" style="border-color: #10b981;" onclick="ingestNextPriorityCall()">📥 Ingest Next Priority Call</button>
+    <button class="demo-btn" onclick="triggerAutoShortestPathDispatch()">🧠 Run Hybrid Dispatch Engine</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD69uYn8uN8vPHfgaGetJc61K819wmvPnk",
+      authDomain: "janrakshak-iot.firebaseapp.com",
+      databaseURL: "https://janrakshak-iot-default-rtdb.firebaseio.com",
+      projectId: "janrakshak-iot",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const sensorRef = ref(db, "sensor_data");
+
+    const el = (id) => document.getElementById(id);
+
+    let map;
+    let victimMarkers = {};
+    let fleetMarkers = {};
+    let baseMarkers = {};
+    let routeLines = {};
+
+    // 5 KERALA FLEET SQUADS WITH HOME BASES & ROUTING MODES
+    const keralaTeams = {
+      "KL-Alpha":   { name: "KL Squad Alpha (Periyar Boat)", mode: "WATER", baseLat: 10.1080, baseLng: 76.3520, lat: 10.1080, lng: 76.3520, status: "AVAILABLE", assignedTo: null, progress: 0, animInterval: null },
+      "KL-Beta":    { name: "KL Squad Beta (Rapid Raft)", mode: "WATER", baseLat: 10.1220, baseLng: 76.3680, lat: 10.1220, lng: 76.3680, status: "AVAILABLE", assignedTo: null, progress: 0, animInterval: null },
+      "KL-Gamma":   { name: "KL Squad Gamma (Amphibious)", mode: "ROAD", baseLat: 10.0880, baseLng: 76.3350, lat: 10.0880, lng: 76.3350, status: "AVAILABLE", assignedTo: null, progress: 0, animInterval: null },
+      "KL-Delta":   { name: "KL Squad Delta (Motorboat Truck)", mode: "ROAD", baseLat: 10.0520, baseLng: 76.3180, lat: 10.0520, lng: 76.3180, status: "AVAILABLE", assignedTo: null, progress: 0, animInterval: null },
+      "KL-Epsilon": { name: "KL Squad Epsilon (Helicopter)", mode: "AIR", baseLat: 10.1400, baseLng: 76.3800, lat: 10.1400, lng: 76.3800, status: "AVAILABLE", assignedTo: null, progress: 0, animInterval: null }
+    };
+
+    const keralaShelters = [
+      { name: "Aluva Municipal Town Hall", beds: "250 Free", status: "AVAILABLE" },
+      { name: "Ernakulam Relief Camp", beds: "80 Free", status: "AVAILABLE" },
+      { name: "Kuttanad Church Relief Center", beds: "FULL", status: "FULL" }
+    ];
+
+    let backendPriorityQueue = [
+      { id: "KL-QUEUE-01", name: "Submerged Hospital ICU Ground Floor", peopleCount: 18, lat: 10.1150, lng: 76.3500, dist: "Aluva Central", triageScore: 98, triage: "CRITICAL 98/100", status: "UNASSIGNED" },
+      { id: "KL-QUEUE-02", name: "School Relief Camp Breach", peopleCount: 14, lat: 10.0950, lng: 76.3420, dist: "Kalamassery Sector", triageScore: 92, triage: "CRITICAL 92/100", status: "UNASSIGNED" },
+      { id: "KL-QUEUE-03", name: "Residential Complex Stranded Floor", peopleCount: 8, lat: 10.1280, lng: 76.3610, dist: "Desom Basin", triageScore: 85, triage: "HIGH 85/100", status: "UNASSIGNED" }
+    ];
+
+    let keralaCases = [
+      { id: "KL-01", name: "Bus Stranded in Periyar Floodwater", peopleCount: 12, lat: 10.1042, lng: 76.3570, dist: "Aluva Riverfront", triageScore: 96, triage: "CRITICAL 96/100", status: "UNASSIGNED" },
+      { id: "KL-02", name: "Family Trapped on Terrace", peopleCount: 5, lat: 10.1120, lng: 76.3480, dist: "Aluva Market", triageScore: 82, triage: "HIGH 82/100", status: "UNASSIGNED" },
+      { id: "KL-03", name: "Stranded Elderly Resident", peopleCount: 1, lat: 10.0980, lng: 76.3550, dist: "Desom, Aluva", triageScore: 45, triage: "MEDIUM 45/100", status: "UNASSIGNED" }
+    ];
+
+    function getPriorityScore(c) { return (c.peopleCount * 10) + c.triageScore; }
+
+    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; 
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
+    }
+
+    // OSRM ROAD NETWORK DISTANCE & ROUTE FETCH
+    async function fetchOSRMRoute(startLat, startLng, endLat, endLng) {
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`);
+        const data = await res.json();
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+          return { distanceKm: route.distance / 1000, polylineCoords: coords };
+        }
+      } catch (e) {
+        console.warn("OSRM routing fallback to Haversine:", e);
+      }
+      return { 
+        distanceKm: calculateHaversineDistance(startLat, startLng, endLat, endLng), 
+        polylineCoords: [[startLat, startLng], [endLat, endLng]] 
+      };
+    }
+
+    function initMap() {
+      if (!map) {
+        map = L.map('map').setView([10.1080, 76.3520], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+        // Render Squad Home Base Markers
+        Object.keys(keralaTeams).forEach(key => {
+          const team = keralaTeams[key];
+          baseMarkers[key] = L.marker([team.baseLat, team.baseLng], { opacity: 0.6 }).addTo(map)
+            .bindPopup(`<b>${team.name} Home Base</b>`);
+        });
+      }
+    }
+
+    // PERSISTENT FIREBASE STATE WRITER
+    function syncStateToFirebase(path, data) {
+      update(ref(db, `sensor_data/${path}`), data).catch(err => console.error("Firebase Sync Error:", err));
+    }
+
+    window.ingestNextPriorityCall = function() {
+      if (backendPriorityQueue.length === 0) return alert("Backend priority queue empty.");
+      backendPriorityQueue.sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
+      const highestCall = backendPriorityQueue.shift();
+      keralaCases.unshift(highestCall);
+
+      syncStateToFirebase("active_cases", { cases: keralaCases });
+      triggerAutoShortestPathDispatch();
+      evaluateThreatIntensity();
+    };
+
+    window.triggerAutoShortestPathDispatch = async function() {
+      const unassignedCases = keralaCases.filter(c => c.status === "UNASSIGNED");
+      unassignedCases.sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
+
+      for (const c of unassignedCases) {
+        let nearestSquadKey = null;
+        let minDistance = Infinity;
+        let bestPathData = null;
+
+        for (const teamKey of Object.keys(keralaTeams)) {
+          const team = keralaTeams[teamKey];
+          if (team.status === "AVAILABLE") {
+            let pathData;
+            if (team.mode === "ROAD") {
+              pathData = await fetchOSRMRoute(team.lat, team.lng, c.lat, c.lng);
+            } else {
+              pathData = { 
+                distanceKm: calculateHaversineDistance(team.lat, team.lng, c.lat, c.lng),
+                polylineCoords: [[team.lat, team.lng], [c.lat, c.lng]]
+              };
+            }
+
+            if (pathData.distanceKm < minDistance) {
+              minDistance = pathData.distanceKm;
+              nearestSquadKey = teamKey;
+              bestPathData = pathData;
+            }
+          }
+        }
+
+        if (nearestSquadKey) {
+          animateTeamMovement(nearestSquadKey, c, bestPathData.polylineCoords);
+        }
+      }
+
+      evaluateThreatIntensity();
+    };
+
+    function evaluateThreatIntensity() {
+      const activeUncompletedCases = keralaCases.filter(c => c.status !== "COMPLETED");
+      const activeCasualties = activeUncompletedCases.reduce((sum, item) => sum + item.peopleCount, 0);
+
+      document.body.className = ''; 
+
+      if (activeCasualties >= 15) {
+        document.body.classList.add('intensity-critical');
+        el('statusText').textContent = `🚨 CRITICAL SURGE: ${activeCasualties} At-Risk Victims`;
+        el('queueHeader').style.color = `var(--danger)`;
+      } else if (activeCasualties >= 8) {
+        document.body.classList.add('intensity-high');
+        el('statusText').textContent = `🟧 HIGH ALERT: ${activeCasualties} Victims Extraction`;
+        el('queueHeader').style.color = `var(--warning)`;
+      } else if (activeCasualties >= 1) {
+        document.body.classList.add('intensity-moderate');
+        el('statusText').textContent = `🟨 MODERATE ALERT: ${activeCasualties} Incidents`;
+        el('queueHeader').style.color = `#84cc16`;
+      } else {
+        el('statusText').textContent = `🟢 ALL RESCUES COMPLETED: System Nominal`;
+        el('queueHeader').style.color = `var(--accent-green)`;
+      }
+
+      el('casualtyCount').textContent = `${activeCasualties} People`;
+      el('sosCount').textContent = `${activeUncompletedCases.length} Active`;
+      el('fleetCount').textContent = `${Object.keys(keralaTeams).length} Squads`;
+      el('backendQueueCount').textContent = `${backendPriorityQueue.length} Pending`;
+
+      renderUI();
+    }
+
+    function renderUI() {
+      keralaCases.sort((a, b) => (a.status === "COMPLETED" ? 1 : b.status === "COMPLETED" ? -1 : getPriorityScore(b) - getPriorityScore(a)));
+
+      el('victimQueue').innerHTML = keralaCases.map(v => `
+        <div class="sos-item" style="${v.status === 'COMPLETED' ? 'opacity: 0.4; border-left-color: #10b981;' : ''}">
+          <div>
+            <div class="sos-title">${v.name} (${v.peopleCount} P) <span class="priority-badge">P Score: ${getPriorityScore(v)}</span></div>
+            <div class="sos-meta">⚡ Triage: <b>${v.triage}</b> • 📍 ${v.dist}</div>
+            <div style="font-size:0.7rem; color:${v.status === 'COMPLETED' ? '#10b981' : 'var(--accent)'}; font-weight:bold; margin-top:2px;">
+              Status: ${v.status}
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; flex-direction:column; align-items:flex-end;">
+            <button onclick="navigateToVictim(${v.lat}, ${v.lng})" class="nav-btn">Inspect ↗</button>
+            ${v.status !== "COMPLETED" ? `<button onclick="centralOverrideComplete('${v.id}')" class="nav-btn" style="background:#ef4444; font-size:0.68rem;">🛠️ Central Override</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      el('teamsContainer').innerHTML = Object.keys(keralaTeams).map(key => {
+        const team = keralaTeams[key];
+        const ready = team.status === "AVAILABLE";
+        const isArrived = team.status === "ARRIVED AT SITE";
+        return `
+          <div class="team-card">
+            <div class="team-header">
+              <div>
+                <strong>${team.name}</strong>
+                <div style="font-size:0.72rem; color:var(--text-sub);">Engine Mode: <b>${team.mode}</b></div>
+              </div>
+              <span style="color:${ready ? 'var(--accent-green)' : (isArrived ? '#84cc16' : 'var(--accent)')}; font-weight:bold; font-size:0.75rem;">
+                ${ready ? 'READY' : team.status}
+              </span>
+            </div>
+            ${!ready ? `
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${team.progress}%;"></div></div>
+              <div style="font-size:0.68rem; color:var(--text-sub); margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
+                <span>GPS Progress: <b>${team.progress}%</b></span>
+                ${isArrived ? `<button onclick="fieldCompleteTask('${key}')" class="nav-btn" style="background:#10b981; padding:3px 8px; font-size:0.68rem;">✅ Finish Mission</button>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      el('sheltersContainer').innerHTML = keralaShelters.map(sh => `
+        <div class="team-card" style="padding: 8px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.82rem;">${sh.name}</span>
+          <strong style="font-size:0.8rem; color:${sh.status === 'FULL' ? '#ef4444' : 'var(--accent-green)'};">${sh.beds}</strong>
+        </div>
+      `).join('');
+
+      if (map) {
+        keralaCases.forEach(v => {
+          if (!victimMarkers[v.id]) {
+            victimMarkers[v.id] = L.circleMarker([v.lat, v.lng], { radius: 10, fillColor: v.status === "COMPLETED" ? '#10b981' : '#ef4444', color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(map);
+          } else {
+            victimMarkers[v.id].setStyle({ fillColor: v.status === "COMPLETED" ? '#10b981' : '#ef4444' });
+          }
+        });
+
+        Object.keys(keralaTeams).forEach(teamKey => {
+          const team = keralaTeams[teamKey];
+          if (!fleetMarkers[teamKey]) {
+            fleetMarkers[teamKey] = L.circleMarker([team.lat, team.lng], { radius: 9, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1 }).addTo(map);
+          } else {
+            fleetMarkers[teamKey].setLatLng([team.lat, team.lng]);
+          }
+        });
+      }
+    }
+
+    function animateTeamMovement(teamKey, targetCase, polylineCoords) {
+      const team = keralaTeams[teamKey];
+      if (team.animInterval) clearInterval(team.animInterval);
+
+      let step = 0;
+      const totalSteps = polylineCoords.length;
+
+      team.status = `EN ROUTE (${targetCase.id})`;
+      team.assignedTo = targetCase.id;
+      targetCase.assignedTeam = teamKey;
+      targetCase.status = `EN ROUTE (${teamKey})`;
+
+      // Render Map Path Polyline
+      if (routeLines[teamKey]) map.removeLayer(routeLines[teamKey]);
+      routeLines[teamKey] = L.polyline(polylineCoords, { color: '#3b82f6', weight: 4, dashArray: '6, 6' }).addTo(map);
+
+      team.animInterval = setInterval(() => {
+        step++;
+        const currentCoord = polylineCoords[Math.min(step, totalSteps - 1)];
+
+        team.lat = currentCoord[0];
+        team.lng = currentCoord[1];
+        team.progress = Math.round((step / totalSteps) * 100);
+
+        if (step >= totalSteps) {
+          clearInterval(team.animInterval);
+          team.animInterval = null;
+          team.status = "ARRIVED AT SITE";
+          targetCase.status = `RESCUE IN PROGRESS (${teamKey})`;
+        }
+
+        renderUI();
+      }, 200);
+    }
+
+    window.fieldCompleteTask = function(teamKey) {
+      const team = keralaTeams[teamKey];
+      if (!team || !team.assignedTo) return;
+      executeTaskCompletion(team.assignedTo, teamKey);
+    };
+
+    window.centralOverrideComplete = function(caseId) {
+      const teamKey = Object.keys(keralaTeams).find(k => keralaTeams[k].assignedTo === caseId);
+      executeTaskCompletion(caseId, teamKey);
+    };
+
+    // FEATURE 1 & 2: STRICT ROUTE LINE CLEANUP & DYNAMIC BASE RELOCATION
+    function executeTaskCompletion(caseId, teamKey) {
+      const target = keralaCases.find(c => c.id === caseId);
+      if (target) target.status = "COMPLETED";
+
+      // 1. Strict Polyline Map Layer Cleanup
+      if (teamKey && routeLines[teamKey]) {
+        map.removeLayer(routeLines[teamKey]);
+        delete routeLines[teamKey];
+      }
+
+      if (teamKey) {
+        const team = keralaTeams[teamKey];
+        if (team.animInterval) clearInterval(team.animInterval);
+        
+        if (target) {
+          team.lat = target.lat;
+          team.lng = target.lng;
+        }
+
+        team.status = "AVAILABLE";
+        team.assignedTo = null;
+        team.progress = 0;
+
+        // 2. Dynamic Relocation: Return vector to Base unless pending call exists
+        const remainingCalls = keralaCases.filter(c => c.status === "UNASSIGNED");
+        if (remainingCalls.length === 0) {
+          relocateTeamToBase(teamKey);
+        }
+      }
+
+      // 3. Persistent Firebase Synchronization
+      syncStateToFirebase("squad_status", { teams: keralaTeams });
+      syncStateToFirebase("active_cases", { cases: keralaCases });
+
+      evaluateThreatIntensity();
+      triggerAutoShortestPathDispatch();
+    }
+
+    async function relocateTeamToBase(teamKey) {
+      const team = keralaTeams[teamKey];
+      if (team.lat === team.baseLat && team.lng === team.baseLng) return;
+
+      team.status = "RETURNING TO BASE";
+      let pathData;
+
+      if (team.mode === "ROAD") {
+        pathData = await fetchOSRMRoute(team.lat, team.lng, team.baseLat, team.baseLng);
+      } else {
+        pathData = { polylineCoords: [[team.lat, team.lng], [team.baseLat, team.baseLng]] };
+      }
+
+      let step = 0;
+      const coords = pathData.polylineCoords;
+
+      if (routeLines[teamKey]) map.removeLayer(routeLines[teamKey]);
+      routeLines[teamKey] = L.polyline(coords, { color: '#10b981', weight: 3, dashArray: '4, 4' }).addTo(map);
+
+      team.animInterval = setInterval(() => {
+        step++;
+        const curr = coords[Math.min(step, coords.length - 1)];
+        team.lat = curr[0];
+        team.lng = curr[1];
+
+        if (step >= coords.length) {
+          clearInterval(team.animInterval);
+          team.animInterval = null;
+          team.status = "AVAILABLE";
+          if (routeLines[teamKey]) {
+            map.removeLayer(routeLines[teamKey]);
+            delete routeLines[teamKey];
+          }
+        }
+        renderUI();
+      }, 250);
+    }
+
+    window.navigateToVictim = function(lat, lng) {
+      map.setView([lat, lng], 15, { animate: true });
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    };
+
+    onValue(sensorRef, (snapshot) => {
+      const allData = snapshot.val();
+      el('connDot').classList.add('live');
+      el('connText').textContent = 'Live Connected';
+      initMap();
+
+      if (allData) {
+        if (allData.sos_calls) {
+          Object.keys(allData.sos_calls).forEach(key => {
+            const incoming = allData.sos_calls[key];
+            if (!keralaCases.some(c => c.id === key) && !backendPriorityQueue.some(c => c.id === key)) {
+              backendPriorityQueue.push({
+                id: key,
+                name: incoming.name || "Firebase Emergency Call",
+                peopleCount: incoming.peopleCount || 3,
+                lat: incoming.lat || 10.1080,
+                lng: incoming.lng || 76.3520,
+                dist: incoming.location || "Kerala Sector",
+                triageScore: incoming.triageScore || 85,
+                triage: incoming.triage || "HIGH 85/100",
+                status: "UNASSIGNED"
+              });
+            }
+          });
+        }
+
+        const riverNode = allData["ESP32_KL_PERIYAR_01"] || Object.values(allData)[0];
+        if (riverNode?.reading) el('waterLevel').textContent = parseFloat(riverNode.reading).toFixed(1);
+
+        evaluateThreatIntensity();
+      }
+    });
+
+    initMap();
+    triggerAutoShortestPathDispatch();
+    evaluateThreatIntensity();
+  </script>
+</body>
+</html>

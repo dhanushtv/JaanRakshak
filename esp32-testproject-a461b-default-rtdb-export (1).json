@@ -1,0 +1,92 @@
+{
+  "esp32-zone-1": {
+    "name": "Zone 1",
+    "place": "Punchirimattom (Crown)",
+    "sensors": {
+      "altitude_m": 234.5381,
+      "distance_cm": 3.57,
+      "pitch": 71.610667238,
+      "pressure_Pa": 98539.48438,
+      "roll": 33.181522202,
+      "temperature_C": 23.53,
+      "water_level": 0,
+      "yaw": 26.731160764
+    }
+  },
+  "esp32-zone-1-backup": {
+    "name": "Zone 1 (Backup)",
+    "place": "Punchirimattom (Crown)",
+    "sensors": {
+      "altitude_m": 234.22694,
+      "distance_cm": 280.10901,
+      "pitch": 70.524998584,
+      "pressure_Pa": 98543.14062,
+      "roll": 33.108009021,
+      "temperature_C": 23.29,
+      "water_level": 0,
+      "yaw": 28.251939693
+    }
+  },
+  "esp32-zone-2": {
+    "name": "Zone 2",
+    "place": "Mundakkai (Runout)",
+    "sensors": {
+      "humidity_pct": 50.05664,
+      "pressure_hPa": 982.80304,
+      "temperature_C": 24.05
+    }
+  },
+  "esp32-zone-2-backup": {
+    "name": "Zone 2 (Backup)",
+    "place": "Mundakkai (Runout)",
+    "sensors": {
+      "humidity_pct": 49.41113,
+      "pressure_hPa": 982.71826,
+      "temperature_C": 24.34
+    }
+  },
+  "predictions": {
+    "esp32-zone-1": {
+      "calamityType": "LOW RISK: Minor Environmental Fluctuation",
+      "floodRisk": 40,
+      "landslideRisk": 12.4,
+      "level": "Yellow alert",
+      "recommendation": "Maintain Automated Surveillance",
+      "riskScore": 40
+    },
+    "esp32-zone-2": {
+      "calamityType": "SAFE: All Metrics Normal & Ground Stable",
+      "floodRisk": 0,
+      "landslideRisk": 0,
+      "level": "Green alert",
+      "recommendation": "No Hazard Detected. Continuous Monitoring Active.",
+      "riskScore": 0
+    }
+  },
+  "response_teams": {
+    "Alpha": {
+      "lat": 11.528,
+      "lng": 76.1415,
+      "name": "Team Alpha",
+      "status": "AVAILABLE"
+    },
+    "Beta": {
+      "lat": 11.5172,
+      "lng": 76.1265,
+      "name": "Team Beta",
+      "status": "AVAILABLE"
+    },
+    "Delta": {
+      "lat": 11.505,
+      "lng": 76.11,
+      "name": "Team Delta",
+      "status": "AVAILABLE"
+    },
+    "Gamma": {
+      "lat": 11.5375,
+      "lng": 76.1528,
+      "name": "Team Gamma",
+      "status": "AVAILABLE"
+    }
+  }
+}
