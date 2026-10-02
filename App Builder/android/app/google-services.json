@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "72214694310",
+    "firebase_url": "https://janrakshak-iot-default-rtdb.firebaseio.com",
+    "project_id": "janrakshak-iot",
+    "storage_bucket": "janrakshak-iot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72214694310:android:a35f4ee6c37915c1c7e767",
+        "android_client_info": {
+          "package_name": "com.example.innohack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXMoj10RQQ5C3vY7PVtCGlC7Kq7lHoFbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72214694310:android:c4f6cf3aedff86ddc7e767",
+        "android_client_info": {
+          "package_name": "com.example.janrakshak_v1_0"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXMoj10RQQ5C3vY7PVtCGlC7Kq7lHoFbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72214694310:android:209597cda1c29b9ac7e767",
+        "android_client_info": {
+          "package_name": "com.example.main_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXMoj10RQQ5C3vY7PVtCGlC7Kq7lHoFbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
